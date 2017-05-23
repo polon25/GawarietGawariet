@@ -3,9 +3,9 @@ package gawarietGawariet.client;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -14,9 +14,14 @@ public class Interface extends JFrame {
 	
 	JTextField loginField = new JTextField("Login");
 	JTextField passwordField = new JTextField("Hasło");
-	
-	String stringPals[]={};
+	JTextField palsField = new JTextField("Dodaj znajomego");
+	JButton loginButton = new JButton("Zaloguj");
+	JButton connectButton = new JButton("Połącz");
+	String stringPals[]={"Dodaj znajomego"};
 	final JComboBox<String> pals = new JComboBox<String>(stringPals);
+	
+	JTextField chatField = new JTextField();
+	JTextField writeField = new JTextField("Napisz wiadomość");
 	
 	public Interface() {
 		setSize(400,600);
@@ -32,13 +37,18 @@ public class Interface extends JFrame {
 		add(BorderLayout.CENTER, chatPanel);
 		add(BorderLayout.SOUTH, writePanel);
 		
-		loginPanel.setLayout(new GridLayout(2,5));
-		
+		loginPanel.setLayout(new GridLayout(2,3));
 		loginPanel.add(loginField);
 		loginPanel.add(passwordField);
-		loginPanel.add(new JLabel());
-		loginPanel.add(new JLabel("Znajomi"));
-		loginPanel.add(pals);
+		loginPanel.add(loginButton);
+		loginPanel.add(palsField);	//Użytkownik może bądź wpisać adresata
+		loginPanel.add(pals);	//Bądź wybrać z listy
+		loginPanel.add(connectButton);	//Wpisanie za pierwszym razem dodaje do listy znajomych
+		
+		chatPanel.setLayout(new BorderLayout());
+		chatPanel.add(chatField);
+		writePanel.setLayout(new BorderLayout());
+		writePanel.add(writeField);
 	}
 
 }
