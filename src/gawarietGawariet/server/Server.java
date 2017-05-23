@@ -1,4 +1,4 @@
-package gawarietGawariet;
+package gawarietGawariet.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;

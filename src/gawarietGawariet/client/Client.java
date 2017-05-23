@@ -1,9 +1,11 @@
-package gawarietGawariet;
+package gawarietGawariet.client;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
+
+import gawarietGawariet.server.Config;
 
 public class Client {
 
@@ -12,7 +14,7 @@ public class Client {
         InetAddress serverAddress = InetAddress.getByName("localhost");
         System.out.println(serverAddress);
 
-                DatagramSocket socket = new DatagramSocket(); //Otwarcie gniazda
+        DatagramSocket socket = new DatagramSocket(); //Otwarcie gniazda
         byte[] stringContents = message.getBytes("utf8"); //Pobranie strumienia bajtów z wiadomosci
 
         DatagramPacket sentPacket = new DatagramPacket(stringContents, stringContents.length);
@@ -29,5 +31,6 @@ public class Client {
         }catch (SocketTimeoutException ste){
             System.out.println("Serwer nie odpowiedzia³, wiêc albo dosta³ wiadomoœæ albo nie...");
         }
+        socket.close();
 	}
 }
