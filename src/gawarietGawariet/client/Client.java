@@ -4,18 +4,23 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
+import javax.swing.JFrame;
 
 import gawarietGawariet.server.Config;
 
 public class Client {
 
 	public static void main(String[] args) throws Exception {
-		String message = "tekst";
+		JFrame window = new Interface();
+		window.setVisible(true);
+		window.setLocationRelativeTo(null);
+		
+		/**String message = "tekst";
         InetAddress serverAddress = InetAddress.getByName("localhost");
         System.out.println(serverAddress);
 
         DatagramSocket socket = new DatagramSocket(); //Otwarcie gniazda
-        byte[] stringContents = message.getBytes("utf8"); //Pobranie strumienia bajtów z wiadomosci
+        byte[] stringContents = message.getBytes("utf8"); //Pobranie strumienia bajtÃ³w z wiadomosci
 
         DatagramPacket sentPacket = new DatagramPacket(stringContents, stringContents.length);
         sentPacket.setAddress(serverAddress);
@@ -27,10 +32,10 @@ public class Client {
 
         try{
             socket.receive(reclievePacket);
-            System.out.println("Serwer otrzyma³ wiadomoœæ");
+            System.out.println("Serwer otrzymaÅ‚ wiadomoÅ›Ä‡");
         }catch (SocketTimeoutException ste){
-            System.out.println("Serwer nie odpowiedzia³, wiêc albo dosta³ wiadomoœæ albo nie...");
+            System.out.println("Serwer nie odpowiedziaÅ‚, wiÄ™c albo dostaÅ‚ wiadomoÅ›Ä‡ albo nie...");
         }
-        socket.close();
+        socket.close();**/
 	}
 }

@@ -3,8 +3,12 @@ package gawarietGawariet.server;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
 
 public class Server {
+	
+	ArrayList<User> users = new ArrayList<User>(); //Tablica zarejestrowanych u≈ºytkownik√≥w
+	
 	public static void main(String[] args) throws Exception {//Przekopiowane ze strony Graczykowskiego
 		//Otwarcie gniazda z okreslonym portem
 	    DatagramSocket datagramSocket = new DatagramSocket(Config.PORT);
@@ -22,13 +26,13 @@ public class Server {
 	        String message =
 	                new String(reclievedPacket.getData(), 0, length, "utf8");
 	
-	        // Port i host ktÛry wys≥a≥ nam zapytanie
+	        // Port i host kt√≥ry wys≈Ça≈Ç nam zapytanie
 	        InetAddress address = reclievedPacket.getAddress();
 	        int port = reclievedPacket.getPort();
 	
 	        System.out.println(message);
 	        Thread.sleep(1000); //To oczekiwanie nie jest potrzebne dla
-	        // obs≥ugi gniazda
+	        // obs≈Çugi gniazda
 	
 	        DatagramPacket response
 	                = new DatagramPacket(
