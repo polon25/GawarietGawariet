@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class Server {
 	
 	static ArrayList<User> users = new ArrayList<User>(); //Tablica zarejestrowanych użytkowników
-	enum status{idle, login, palSelect, logout};
+	enum status{idle, login, palSelect, logout, send};
 	
 	public static void main(String[] args) throws Exception {//Przekopiowane ze strony Graczykowskiego
 		//Otwarcie gniazda z okreslonym portem
@@ -83,19 +83,29 @@ public class Server {
 	        	for (int i=0; i<users.size();i++){
         			if(users.get(i).lastAddress.equals(address)){
         				users.get(i).online=false;
+        				users.get(i).busy=false;
         				users.get(i).currentPal=null;
         			}
         		}
 	        	currentStatus=status.idle;
 	        }
 	        else if (currentStatus==status.palSelect){	//Wybór adresata
-	        	for (int i=0; i<users.size();i++){
+	        	for (int i=0; i<users.size();i++){	//Szukaj adresata
         			if(users.get(i).login.equals(message)){
-        				for (int j=0; j<users.size();i++){
+        				for (int j=0; j<users.size();i++){	//Szukaj wysyłającego
         					if(users.get(j).lastAddress.equals(address)){
-                				users.get(j).currentPal=users.get(i);
-                				response = new DatagramPacket(
+        						if (users.get(i).busy){	//Jeżeli użytkownik zajęty
+        							response = new DatagramPacket(
+        	        						"BusyPal".getBytes("utf8"), "BusyPal".getBytes("utf8").length, address, port);
+        						}
+        						else{
+        							users.get(j).currentPal=users.get(i);
+        							users.get(i).currentPal=users.get(j);
+        							users.get(j).busy=true;
+        							users.get(i).busy=true;
+        							response = new DatagramPacket(
     	        						"Connected".getBytes("utf8"), "Connected".getBytes("utf8").length, address, port);
+        						}
                 				break;
         					}
         					response = new DatagramPacket(
@@ -104,6 +114,21 @@ public class Server {
         				break;
         			}
         		}
+	        	currentStatus=status.idle;
+	        }
+	        else if (currentStatus==status.send){	//Wyślij wiadomość od użytkownika
+	        	for (int i=0; i<users.size();i++){
+        			if(users.get(i).lastAddress.equals(address)){
+        				message=users.get(i).login+": "+message+"\n";
+        				response = new DatagramPacket(
+        						message.getBytes("utf8"), message.getBytes("utf8").length,
+        						users.get(i).currentPal.lastAddress, users.get(i).currentPal.lastPort);
+        				datagramSocket.send(response);
+        				response = new DatagramPacket(
+        						message.getBytes("utf8"), message.getBytes("utf8").length, address, port);
+        				break;
+        			}
+	        	}
 	        	currentStatus=status.idle;
 	        }
 	        
@@ -118,6 +143,9 @@ public class Server {
 	        }
 	        else if (message.equals("Login")){
 	        	currentStatus=status.logout;
+	        }
+	        else if (message.equals("Send")){
+	        	currentStatus=status.send;
 	        }
 	        
 	        datagramSocket.send(response);

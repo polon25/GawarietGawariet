@@ -7,6 +7,7 @@ public class User {
 	String login;
 	String password;
 	boolean online=false; //Czy użytkownik jest online?
+	boolean busy=false;	//Czy użytkownik jest z kimś połączony?
 	InetAddress lastAddress=null;	//Obecnie używane IP
 	int lastPort;	//Obecnie używany port
 	User currentPal=null;	//Użytkownik z którym obecnie pisze

@@ -14,6 +14,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class Interface extends JFrame implements FocusListener {
@@ -27,7 +28,7 @@ public class Interface extends JFrame implements FocusListener {
 	String stringPals[]={"Dodaj znajomego"};
 	final JComboBox<String> pals = new JComboBox<String>(stringPals);
 	
-	JTextField chatField = new JTextField();
+	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
 	
 	public Interface() {
@@ -57,6 +58,8 @@ public class Interface extends JFrame implements FocusListener {
 		writePanel.setLayout(new BorderLayout());
 		writePanel.add(writeField);
 		
+		
+		
 		loginButton.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
 		    	try {
@@ -70,6 +73,15 @@ public class Interface extends JFrame implements FocusListener {
 		    public void actionPerformed(ActionEvent e) {
 		    	try {
 					addPal();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+		    }
+		});
+		writeField.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e) {
+		    	try {
+					send();
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
@@ -150,6 +162,12 @@ public class Interface extends JFrame implements FocusListener {
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
 		}
+		else if(servResp.equals("BusyPal")){
+			JOptionPane.showMessageDialog(
+                    this, "Użytkownik jest zajęty. Poczekaj jakiś czas.",
+                    "Łączenie z użytkownikiem",
+                    JOptionPane.WARNING_MESSAGE);
+		}
 		else if(servResp.equals("NoPal")){
 			JOptionPane.showMessageDialog(
                     this, "Nie istnieje taki użytkownik",
@@ -162,5 +180,11 @@ public class Interface extends JFrame implements FocusListener {
                     "Łączenie z użytkownikiem",
                     JOptionPane.ERROR_MESSAGE);
 		}
+	}
+	void send() throws Exception {
+		Client client = new Client();
+		client.sendMesg("Send");
+		String msg=client.sendMesg(writeField.getText());
+		chatField.setText(chatField.getText()+msg);
 	}
 }
