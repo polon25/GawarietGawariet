@@ -8,6 +8,9 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -16,6 +19,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
+
+import gawarietGawariet.server.Config;
 
 public class Interface extends JFrame implements FocusListener {
 	private static final long serialVersionUID = 1L;
@@ -31,7 +37,7 @@ public class Interface extends JFrame implements FocusListener {
 	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
 	
-	public Interface() {
+	public Interface() throws Exception {
 		setSize(400,600);
 		setTitle("Gawariet-Gawariet");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -106,6 +112,26 @@ public class Interface extends JFrame implements FocusListener {
 		pack();	//Po to by requestFocus zadziałał
 		setSize(400,600);
 		loginButton.requestFocusInWindow();	//Aby focus nie był na loginie na wstępie
+		
+	}
+	
+	private class CheckMsg extends SwingWorker<Void, Void>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
+		int port;
+		public CheckMsg(int port){
+			this.port=port;
+		}
+		public Void doInBackground() throws Exception{
+			DatagramSocket datagramSocket = new DatagramSocket(port);
+			while(true){
+				DatagramPacket reclievedPacket
+                	= new DatagramPacket( new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
+				datagramSocket.receive(reclievedPacket);
+				int length = reclievedPacket.getLength();
+				String message =
+						new String(reclievedPacket.getData(), 0, length, "utf8");
+				chatField.setText(chatField.getText()+message);
+			}
+		}
 	}
 		
 	public void focusGained(FocusEvent fe) {
@@ -161,6 +187,8 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+palsField.getText(),
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
+			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
+			check.execute();
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(

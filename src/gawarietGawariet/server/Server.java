@@ -147,6 +147,10 @@ public class Server {
 	        else if (message.equals("Send")){
 	        	currentStatus=status.send;
 	        }
+	        else if (message.equals("PortReq")){ //Wyślij numer wykorzystywanego portu
+        		response = new DatagramPacket(
+        			Integer.toString(port).getBytes("utf8"), Integer.toString(port).getBytes("utf8").length, address, port);
+	        }
 	        
 	        datagramSocket.send(response);
 	    }
