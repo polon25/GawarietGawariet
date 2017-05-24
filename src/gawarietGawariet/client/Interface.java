@@ -10,6 +10,7 @@ import java.awt.event.FocusListener;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -56,10 +57,11 @@ public class Interface extends JFrame implements FocusListener {
 		
 		loginButton.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
-		    	System.out.print("Login: ");
-		    	System.out.println(loginField.getText());
-		    	System.out.print("Password: ");
-		    	System.out.println(passwordField.getText());
+		    	try {
+					log2server();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
 		    }
 		});
 		
@@ -80,4 +82,35 @@ public class Interface extends JFrame implements FocusListener {
 	}
 
 	public void focusLost(FocusEvent fe) {}	
+	
+	void log2server() throws Exception {
+		Client client = new Client();
+		client.sendMesg("Login");
+		client.sendMesg(loginField.getText());
+		String servResp=client.sendMesg(passwordField.getText());
+		if(servResp.equals("Logged")){
+			JOptionPane.showMessageDialog(
+                    this, "Logowanie się powiodło",
+                    "Logowanie",
+                    JOptionPane.INFORMATION_MESSAGE);
+		}
+		else if(servResp.equals("Registered")){
+			JOptionPane.showMessageDialog(
+                    this, "Zarejestrowano się",
+                    "Logowanie",
+                    JOptionPane.INFORMATION_MESSAGE);
+		}
+		else if(servResp.equals("WrongLog")){
+			JOptionPane.showMessageDialog(
+                    this, "Podano złe hasło",
+                    "Logowanie",
+                    JOptionPane.ERROR_MESSAGE);
+		}
+		else {
+			JOptionPane.showMessageDialog(
+                    this, "Wystąpił problem. Logowanie nie powiodło się.",
+                    "Logowanie",
+                    JOptionPane.ERROR_MESSAGE);
+		}
+	}
 }
