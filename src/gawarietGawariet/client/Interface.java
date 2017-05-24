@@ -10,13 +10,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -27,7 +27,7 @@ public class Interface extends JFrame implements FocusListener {
 	private static final long serialVersionUID = 1L;
 	
 	JTextField loginField = new JTextField("Login");
-	JTextField passwordField = new JTextField("Hasło");
+	JPasswordField passwordField = new JPasswordField("Hasło");
 	JTextField palsField = new JTextField("Dodaj znajomego");
 	JButton loginButton = new JButton("Zaloguj");
 	JButton connectButton = new JButton("Połącz");
@@ -108,12 +108,25 @@ public class Interface extends JFrame implements FocusListener {
 		loginField.addFocusListener(this);
 		passwordField.addFocusListener(this);
 		palsField.addFocusListener(this);
+		writeField.addFocusListener(this);
 		
 		pack();	//Po to by requestFocus zadziałał
 		setSize(400,600);
 		loginButton.requestFocusInWindow();	//Aby focus nie był na loginie na wstępie
 		
 	}
+	
+	public void focusGained(FocusEvent fe) {
+		if(fe.getSource()==loginField)
+			loginField.setText("");
+		else if(fe.getSource()==passwordField)
+			passwordField.setText("");
+		else if(fe.getSource()==palsField)
+			palsField.setText("");
+		else if(fe.getSource()==writeField)
+			writeField.setText("");
+	}
+	public void focusLost(FocusEvent fe) {}	
 	
 	private class CheckMsg extends SwingWorker<Void, Void>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
 		int port;
@@ -130,22 +143,10 @@ public class Interface extends JFrame implements FocusListener {
 				String message =
 						new String(reclievedPacket.getData(), 0, length, "utf8");
 				chatField.setText(chatField.getText()+message);
+				System.out.println("Otrzymano wiadomość: "+message);
 			}
 		}
 	}
-		
-	public void focusGained(FocusEvent fe) {
-		if(fe.getSource()==loginField || fe.getSource()==passwordField){
-			if(fe.getSource()==loginField)
-				loginField.setText("");
-			else if(fe.getSource()==passwordField)
-				passwordField.setText("");
-			else if(fe.getSource()==palsField)
-				palsField.setText("");
-		}
-	}
-
-	public void focusLost(FocusEvent fe) {}	
 	
 	void log2server() throws Exception {
 		Client client = new Client();
@@ -157,6 +158,8 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Logowanie się powiodło",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
+			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
+			check.execute();	//Włączenie nasłuchiwania
 		}
 		else if(servResp.equals("Registered")){
 			JOptionPane.showMessageDialog(
@@ -187,8 +190,6 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+palsField.getText(),
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
-			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
-			check.execute();
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
