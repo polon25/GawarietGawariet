@@ -16,7 +16,6 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -27,7 +26,7 @@ public class Interface extends JFrame implements FocusListener {
 	private static final long serialVersionUID = 1L;
 	
 	JTextField loginField = new JTextField("Login");
-	JPasswordField passwordField = new JPasswordField("Hasło");
+	JTextField passwordField = new JTextField("Hasło");
 	JTextField palsField = new JTextField("Dodaj znajomego");
 	JButton loginButton = new JButton("Zaloguj");
 	JButton connectButton = new JButton("Połącz");
@@ -36,6 +35,8 @@ public class Interface extends JFrame implements FocusListener {
 	
 	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
+	
+	boolean connected = false;
 	
 	public Interface() throws Exception {
 		setSize(400,600);
@@ -86,11 +87,24 @@ public class Interface extends JFrame implements FocusListener {
 		});
 		writeField.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
-		    	try {
-					send();
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
+		    	if (connected){
+			    	try {
+						send();
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+		    	}
+		    	else{
+		    		try {
+						JOptionPane.showMessageDialog(
+						        new Interface(), "Nie połączono się z zadnym użytkownikiem",
+						        "Błąd połączenia",
+						        JOptionPane.ERROR_MESSAGE);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+		    	}
+		    		
 		    }
 		});
 		
@@ -190,6 +204,7 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+palsField.getText(),
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
+			connected=true;
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
