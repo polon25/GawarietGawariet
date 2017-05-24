@@ -23,15 +23,15 @@ public class Client {
         sentPacket.setPort(Config.PORT);
         socket.send(sentPacket);
 
-        DatagramPacket reclievePacket = new DatagramPacket(new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
+        DatagramPacket receivePacket = new DatagramPacket(new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
         socket.setSoTimeout(1000);
-        reclievePacket.getData();
+        receivePacket.getData();
         
         String serverMsg="";
         try{
-            socket.receive(reclievePacket);
+            socket.receive(receivePacket);
             System.out.println("Serwer otrzymał wiadomość");
-			serverMsg=new String(reclievePacket.getData(), 0, reclievePacket.getLength(), "utf8");
+			serverMsg=new String(receivePacket.getData(), 0, receivePacket.getLength(), "utf8");
 			System.out.println(serverMsg);
         }catch (SocketTimeoutException ste){
             System.out.println("Serwer nie odpowiedział, więc albo dostał wiadomość albo nie...");
