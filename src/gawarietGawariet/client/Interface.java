@@ -19,6 +19,9 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 import gawarietGawariet.server.Config;
 
@@ -36,7 +39,9 @@ public class Interface extends JFrame implements FocusListener {
 	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
 	
-	boolean connected = false;
+	//boolean connected = false;
+	
+	ScheduledExecutorService exec;
 	
 	public Interface() throws Exception {
 		setSize(400,600);
@@ -87,13 +92,13 @@ public class Interface extends JFrame implements FocusListener {
 		});
 		writeField.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
-		    	if (connected){
+		    	//if (connected){
 			    	try {
 						send();
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
-		    	}
+		    	/**}
 		    	else{
 		    		try {
 						JOptionPane.showMessageDialog(
@@ -103,8 +108,7 @@ public class Interface extends JFrame implements FocusListener {
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
-		    	}
-		    		
+		    	}**/
 		    }
 		});
 		
@@ -158,6 +162,7 @@ public class Interface extends JFrame implements FocusListener {
 						new String(reclievedPacket.getData(), 0, length, "utf8");
 				chatField.setText(chatField.getText()+message);
 				System.out.println("Otrzymano wiadomość: "+message);
+				validate();
 			}
 		}
 	}
@@ -173,7 +178,13 @@ public class Interface extends JFrame implements FocusListener {
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
 			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
-			check.execute();	//Włączenie nasłuchiwania
+			check.execute();
+			new Timer(100, new ActionListener() {	//Nasłuchiwanie
+				 public void actionPerformed(ActionEvent e) {
+					 validate();	//Włączenie nasłuchiwania
+				 }
+			 }).start();
+			validate();
 		}
 		else if(servResp.equals("Registered")){
 			JOptionPane.showMessageDialog(
@@ -204,7 +215,7 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+palsField.getText(),
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
-			connected=true;
+			//connected=true;
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
