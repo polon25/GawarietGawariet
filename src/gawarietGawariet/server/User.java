@@ -7,8 +7,9 @@ public class User {
 	String login;
 	String password;
 	boolean online=false; //Czy użytkownik jest online?
-	InetAddress lastAddress;	//Obecnie używane IP
-	User currentAddresser=null;	//Użytkownik z którym obecnie pisze
+	InetAddress lastAddress=null;	//Obecnie używane IP
+	int lastPort;	//Obecnie używany port
+	User currentPal=null;	//Użytkownik z którym obecnie pisze
 	ArrayList<String> pals = new ArrayList<String>();	//Lista znajomych
 	ArrayList<String> unreadMesg = new ArrayList<String>();	//Nieodebrane wiadomości
 	

@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -64,9 +66,31 @@ public class Interface extends JFrame implements FocusListener {
 				}
 		    }
 		});
+		connectButton.addActionListener(new ActionListener() {
+		    public void actionPerformed(ActionEvent e) {
+		    	try {
+					addPal();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+		    }
+		});
+		
+		addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e)
+            {
+            	try {
+					new Client().sendMesg("Logout");
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+            }
+        });
 		
 		loginField.addFocusListener(this);
 		passwordField.addFocusListener(this);
+		palsField.addFocusListener(this);
+		
 		pack();	//Po to by requestFocus zadziałał
 		setSize(400,600);
 		loginButton.requestFocusInWindow();	//Aby focus nie był na loginie na wstępie
@@ -76,8 +100,10 @@ public class Interface extends JFrame implements FocusListener {
 		if(fe.getSource()==loginField || fe.getSource()==passwordField){
 			if(fe.getSource()==loginField)
 				loginField.setText("");
-			else
+			else if(fe.getSource()==passwordField)
 				passwordField.setText("");
+			else if(fe.getSource()==palsField)
+				palsField.setText("");
 		}
 	}
 
@@ -110,6 +136,30 @@ public class Interface extends JFrame implements FocusListener {
 			JOptionPane.showMessageDialog(
                     this, "Wystąpił problem. Logowanie nie powiodło się.",
                     "Logowanie",
+                    JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	void addPal() throws Exception {
+		Client client = new Client();
+		client.sendMesg("PalSelect");
+		String servResp=client.sendMesg(palsField.getText());
+		if(servResp.equals("Connected")){
+			JOptionPane.showMessageDialog(
+                    this, "Połączono się z użytkownikiem "+palsField.getText(),
+                    "Łączenie z użytkownikiem",
+                    JOptionPane.INFORMATION_MESSAGE);
+		}
+		else if(servResp.equals("NoPal")){
+			JOptionPane.showMessageDialog(
+                    this, "Nie istnieje taki użytkownik",
+                    "Łączenie z użytkownikiem",
+                    JOptionPane.ERROR_MESSAGE);
+		}
+		else {
+			JOptionPane.showMessageDialog(
+                    this, "Wystąpił problem. Nie udało się połączyć.",
+                    "Łączenie z użytkownikiem",
                     JOptionPane.ERROR_MESSAGE);
 		}
 	}
