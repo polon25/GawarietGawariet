@@ -154,6 +154,7 @@ public class Server {
 
 
              * A tu to samo co wyzej w jednej linijce
+             * przyklad potegi programowania obiektowego
              */
 
             currentStatus = Status.getStatus(message);
