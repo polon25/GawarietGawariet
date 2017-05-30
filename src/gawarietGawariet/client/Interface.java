@@ -8,9 +8,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketTimeoutException;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -69,7 +67,7 @@ public class Interface extends JFrame implements FocusListener {
 		writePanel.setLayout(new BorderLayout());
 		writePanel.add(writeField);
 		
-		
+		chatField.setEditable(false);
 		
 		loginButton.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
@@ -93,6 +91,7 @@ public class Interface extends JFrame implements FocusListener {
 		    public void actionPerformed(ActionEvent e) {
 			    try {
 					send();
+					writeField.setText("");
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
@@ -133,10 +132,6 @@ public class Interface extends JFrame implements FocusListener {
 	public void focusLost(FocusEvent fe) {}	
 	
 	private class CheckMsg extends SwingWorker<Void, String>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
-		DatagramSocket datagramSocket;
-		public CheckMsg(int port) throws Exception{
-			datagramSocket = new DatagramSocket(port);
-		}
 		public Void doInBackground() throws Exception{
 			while(true){	//Sprawdzenie, czy na serwerze są jakieś wiadomości
 				Client client = new Client();
@@ -160,7 +155,7 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Logowanie się powiodło",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
-			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
+			CheckMsg check = new CheckMsg();
 			new Timer(100, new ActionListener() {	//Nasłuchiwanie
 				 public void actionPerformed(ActionEvent e) {
 					 check.execute();
@@ -173,7 +168,7 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Zarejestrowano się",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
-			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
+			CheckMsg check = new CheckMsg();
 			new Timer(100, new ActionListener() {	//Nasłuchiwanie
 				 public void actionPerformed(ActionEvent e) {
 					 check.execute();
