@@ -146,16 +146,6 @@ public class Interface extends JFrame implements FocusListener {
 					chatField.setText(chatField.getText()+response);
 				}	
 				Thread.sleep(2000);
-				/**DatagramPacket reclievedPacket
-	             	= new DatagramPacket(new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
-				try{
-					datagramSocket.receive(reclievedPacket);
-					int length = reclievedPacket.getLength();
-					String message =
-							new String(reclievedPacket.getData(), 0, length, "utf8");
-					chatField.setText(chatField.getText()+message);
-					System.out.println("Otrzymano wiadomość: "+message);
-		        }catch (SocketTimeoutException ste){}**/
 			}
 		}
 	}
