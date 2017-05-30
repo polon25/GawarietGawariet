@@ -13,7 +13,7 @@ public class Client {
 	
 	public String sendMesg(String message) throws Exception {
 		InetAddress serverAddress = InetAddress.getByName("localhost");
-        System.out.println(serverAddress);
+        //System.out.println(serverAddress);
 
         DatagramSocket socket = new DatagramSocket(); //Otwarcie gniazda
         byte[] stringContents = message.getBytes("utf8"); //Pobranie strumienia bajtów z wiadomosci
@@ -30,7 +30,6 @@ public class Client {
         String serverMsg="";
         try{
             socket.receive(receivePacket);
-            System.out.println("Serwer otrzymał wiadomość");
 			serverMsg=new String(receivePacket.getData(), 0, receivePacket.getLength(), "utf8");
 			System.out.println(serverMsg);
         }catch (SocketTimeoutException ste){

@@ -9,9 +9,7 @@ import java.util.ArrayList;
 public class Server {
 
     static ArrayList<User> users = new ArrayList<User>(); //Tablica zarejestrowanych użytkowników
-
-
-    ;
+    enum status{idle, login, palSelect, logout, send, msg};
 
     public static void main(String[] args) throws Exception {//Przekopiowane ze strony Graczykowskiego
         //Otwarcie gniazda z okreslonym portem
@@ -20,12 +18,12 @@ public class Server {
         byte[] byteResponse = "OK".getBytes("utf8");
 
         int mesgCounter = 0;    //Licznik otrzymanych wiadomości dla specjalnych zastosowań
-        Status currentStatus = Status.IDLE;
+        status currentStatus = status.idle;
         String tmpLogin = "";
         String tmpPassword = "";
 
         System.out.println("Server is running");
-
+        
         while (true) {
 
             DatagramPacket reclievedPacket
@@ -45,7 +43,7 @@ public class Server {
                     byteResponse, byteResponse.length, address, port);
 
             //Osbługa zgłoszeń od klientów
-            if (currentStatus == Status.LOGIN) {    //Logowanie użytkownika
+            if (currentStatus == status.login) {    //Logowanie użytkownika
                 if (mesgCounter == 0) {    //Pierwsza informacja - LOGIN
                     tmpLogin = message;
                     mesgCounter++;
@@ -77,9 +75,9 @@ public class Server {
                         response = new DatagramPacket(
                                 "Registered".getBytes("utf8"), "Registered".getBytes("utf8").length, address, port);
                     }
-                    currentStatus = Status.IDLE;
+                    currentStatus = status.idle;
                 }
-            } else if (currentStatus == Status.LOGOUT) {    //Wyloguj użytkownika, z którego adresu przyszła informacja
+            } else if (currentStatus == status.logout) {    //Wyloguj użytkownika, z którego adresu przyszła informacja
                 for (int i = 0; i < users.size(); i++) {
                     if (users.get(i).lastAddress.equals(address)) {
                         users.get(i).online = false;
@@ -87,8 +85,8 @@ public class Server {
                         users.get(i).currentPal = null;
                     }
                 }
-                currentStatus = Status.IDLE;
-            } else if (currentStatus == Status.PALSELECT) {    //Wybór adresata
+                currentStatus = status.idle;
+            } else if (currentStatus == status.palSelect) {    //Wybór adresata
                 for (int i = 0; i < users.size(); i++) {    //Szukaj adresata
                     if (users.get(i).login.equals(message)) {
                         for (int j = 0; j < users.size(); i++) {    //Szukaj wysyłającego
@@ -112,23 +110,25 @@ public class Server {
                         break;
                     }
                 }
-                currentStatus = Status.IDLE;
-            } else if (currentStatus == Status.SEND) {    //Wyślij wiadomość od użytkownika
+                currentStatus = status.idle;
+            } else if (currentStatus == status.send) {    //Wyślij wiadomość od użytkownika
                 for (int i = 0; i < users.size(); i++) {
                     if (users.get(i).lastAddress.equals(address)) {
                         message = users.get(i).login + ": " + message + "\n";
-                        response = new DatagramPacket(
+                        users.get(i).currentPal.unreadMesg.add(message);
+                        /**response = new DatagramPacket(
                                 message.getBytes("utf8"), message.getBytes("utf8").length,
                                 users.get(i).currentPal.lastAddress, users.get(i).currentPal.lastPort);
-                        datagramSocket.send(response);
+                        datagramSocket.send(response);**/
                         response = new DatagramPacket(
                                 message.getBytes("utf8"),
-                                message.getBytes("utf8").length, address, port
-                        );
+                                message.getBytes("utf8").length, address, port);
                         break;
                     }
                 }
-                currentStatus = Status.IDLE;
+                currentStatus = status.idle;
+            } else if (currentStatus == status.msg) {    //Wyślij wiadomość od użytkownika
+                
             }
 
             //Zmiana statusu - tutaj, gdyż to informacje te dostaje się przed powyższymi
@@ -136,28 +136,51 @@ public class Server {
              * Deprecated ..
              *
              *
-             *
+             */
 
             System.out.println(message);
             if (message.equals("Login")) {
-                currentStatus = login;
+                currentStatus = status.login;
             } else if (message.equals("PalSelect")) {
-                currentStatus = palSelect;
-            } else if (message.equals("Login")) {
-                currentStatus = logout;
+                currentStatus = status.palSelect;
+            } else if (message.equals("Logout")) {
+                currentStatus = status.logout;
             } else if (message.equals("Send")) {
-                currentStatus = send;
+                currentStatus = status.send;
             } else if (message.equals("PortReq")) { //Wyślij numer wykorzystywanego portu
                 response = new DatagramPacket(
                         Integer.toString(port).getBytes("utf8"), Integer.toString(port).getBytes("utf8").length, address, port);
             }
+            else if (message.equals("CheckMsg")) {
+                currentStatus = status.msg;
+                for (int i = 0; i < users.size(); i++) {
+                    if (users.get(i).lastAddress.equals(address)) {
+                    	if (users.get(i).unreadMesg.size()>0){
+                    		message = users.get(i).unreadMesg.get(0);
+                    		users.get(i).unreadMesg.remove(0);
+                    	}
+                    	else
+                    		message = "NoMsg";
+                        response = new DatagramPacket(
+                                message.getBytes("utf8"),
+                                message.getBytes("utf8").length, address, port);
+                        break;
+                    }
+                }
+                currentStatus = status.idle;
+            } 
 
 
-             * A tu to samo co wyzej w jednej linijce
+             /* A tu to samo co wyzej w jednej linijce
              * przyklad potegi programowania obiektowego
              */
 
-            currentStatus = Status.getStatus(message);
+            //currentStatus = Status.getStatus(message);
+            
+            /**
+             * Co to za potęga, skoro nie działa tak jak powinna?
+             * Lepsze chłopskie rozwiązanie, które przynajmniej działa dobrze.
+             */
 
             /**
              * O nie to jest wszsytko w static mainie ....aaaa

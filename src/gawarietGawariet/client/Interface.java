@@ -10,6 +10,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -38,8 +39,6 @@ public class Interface extends JFrame implements FocusListener {
 	
 	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
-	
-	//boolean connected = false;
 	
 	ScheduledExecutorService exec;
 	
@@ -92,23 +91,11 @@ public class Interface extends JFrame implements FocusListener {
 		});
 		writeField.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
-		    	//if (connected){
-			    	try {
-						send();
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-		    	/**}
-		    	else{
-		    		try {
-						JOptionPane.showMessageDialog(
-						        new Interface(), "Nie połączono się z zadnym użytkownikiem",
-						        "Błąd połączenia",
-						        JOptionPane.ERROR_MESSAGE);
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-		    	}**/
+			    try {
+					send();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
 		    }
 		});
 		
@@ -130,8 +117,7 @@ public class Interface extends JFrame implements FocusListener {
 		
 		pack();	//Po to by requestFocus zadziałał
 		setSize(400,600);
-		loginButton.requestFocusInWindow();	//Aby focus nie był na loginie na wstępie
-		
+		loginButton.requestFocusInWindow();	//Aby focus nie był na loginie na wstępie       
 	}
 	
 	public void focusGained(FocusEvent fe) {
@@ -146,23 +132,30 @@ public class Interface extends JFrame implements FocusListener {
 	}
 	public void focusLost(FocusEvent fe) {}	
 	
-	private class CheckMsg extends SwingWorker<Void, Void>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
-		int port;
-		public CheckMsg(int port){
-			this.port=port;
+	private class CheckMsg extends SwingWorker<Void, String>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
+		DatagramSocket datagramSocket;
+		public CheckMsg(int port) throws Exception{
+			datagramSocket = new DatagramSocket(port);
 		}
 		public Void doInBackground() throws Exception{
-			DatagramSocket datagramSocket = new DatagramSocket(port);
-			while(true){
-				DatagramPacket reclievedPacket
-                	= new DatagramPacket( new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
-				datagramSocket.receive(reclievedPacket);
-				int length = reclievedPacket.getLength();
-				String message =
-						new String(reclievedPacket.getData(), 0, length, "utf8");
-				chatField.setText(chatField.getText()+message);
-				System.out.println("Otrzymano wiadomość: "+message);
-				validate();
+			while(true){	//Sprawdzenie, czy na serwerze są jakieś wiadomości
+				Client client = new Client();
+				String response=client.sendMesg("CheckMsg");
+				if (!response.equals("NoMsg")){
+					System.out.println("Otrzymano wiadomość: "+response);
+					chatField.setText(chatField.getText()+response);
+				}	
+				Thread.sleep(2000);
+				/**DatagramPacket reclievedPacket
+	             	= new DatagramPacket(new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
+				try{
+					datagramSocket.receive(reclievedPacket);
+					int length = reclievedPacket.getLength();
+					String message =
+							new String(reclievedPacket.getData(), 0, length, "utf8");
+					chatField.setText(chatField.getText()+message);
+					System.out.println("Otrzymano wiadomość: "+message);
+		        }catch (SocketTimeoutException ste){}**/
 			}
 		}
 	}
@@ -178,19 +171,25 @@ public class Interface extends JFrame implements FocusListener {
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
 			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
-			check.execute();
 			new Timer(100, new ActionListener() {	//Nasłuchiwanie
 				 public void actionPerformed(ActionEvent e) {
+					 check.execute();
 					 validate();	//Włączenie nasłuchiwania
 				 }
 			 }).start();
-			validate();
 		}
 		else if(servResp.equals("Registered")){
 			JOptionPane.showMessageDialog(
                     this, "Zarejestrowano się",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
+			CheckMsg check = new CheckMsg(Integer.parseInt(client.sendMesg("PortReq")));
+			new Timer(100, new ActionListener() {	//Nasłuchiwanie
+				 public void actionPerformed(ActionEvent e) {
+					 check.execute();
+					 validate();	//Włączenie nasłuchiwania
+				 }
+			 }).start();
 		}
 		else if(servResp.equals("WrongLog")){
 			JOptionPane.showMessageDialog(
@@ -215,7 +214,6 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+palsField.getText(),
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
-			//connected=true;
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
