@@ -12,7 +12,7 @@ public class Client {
 	public Client() {}
 	
 	public String sendMesg(String message) throws Exception {
-		InetAddress serverAddress = InetAddress.getByName("localhost");
+		InetAddress serverAddress = InetAddress.getByName("192.168.1.13");
         //System.out.println(serverAddress);
 
         DatagramSocket socket = new DatagramSocket(); //Otwarcie gniazda

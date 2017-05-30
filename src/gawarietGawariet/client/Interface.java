@@ -8,7 +8,6 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.net.DatagramSocket;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -20,9 +19,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
+import java.util.ArrayList;
 import java.util.concurrent.ScheduledExecutorService;
-
-import gawarietGawariet.server.Config;
 
 public class Interface extends JFrame implements FocusListener {
 	private static final long serialVersionUID = 1L;
@@ -33,12 +31,14 @@ public class Interface extends JFrame implements FocusListener {
 	JButton loginButton = new JButton("Zaloguj");
 	JButton connectButton = new JButton("Połącz");
 	String stringPals[]={"Dodaj znajomego"};
-	final JComboBox<String> pals = new JComboBox<String>(stringPals);
+	JComboBox<String> pals = new JComboBox<String>(stringPals);
 	
 	JTextArea chatField = new JTextArea();
 	JTextField writeField = new JTextField("Napisz wiadomość");
 	
 	ScheduledExecutorService exec;
+	
+	boolean isBusy = false; // Czy następuje komunikacja z serwerem? - zapobiega "wmieszaniu" się danych wysyłanych
 	
 	public Interface() throws Exception {
 		setSize(400,600);
@@ -134,18 +134,43 @@ public class Interface extends JFrame implements FocusListener {
 	private class CheckMsg extends SwingWorker<Void, String>{	//Sprawdzanie, czy nie ma nowych wiadomości (działa w tle)
 		public Void doInBackground() throws Exception{
 			while(true){	//Sprawdzenie, czy na serwerze są jakieś wiadomości
+				while(isBusy);
+				isBusy=true;
 				Client client = new Client();
 				String response=client.sendMesg("CheckMsg");
 				if (!response.equals("NoMsg")){
 					System.out.println("Otrzymano wiadomość: "+response);
 					chatField.setText(chatField.getText()+response);
-				}	
+				}
+				isBusy=false;
 				Thread.sleep(2000);
 			}
 		}
 	}
 	
-	void log2server() throws Exception {
+	private void startListen(){//Nasłuchiwanie w tle
+		CheckMsg check = new CheckMsg();
+		new Timer(100, new ActionListener() {	
+			 public void actionPerformed(ActionEvent e) {
+				 check.execute();
+				 validate();
+			 }
+		 }).start();
+	}
+	
+	private void downloadPals() throws Exception{//Nasłuchiwanie w tle
+		Client client = new Client();
+		while(true){
+			String pal=client.sendMesg("PalsList");
+			if (pal.equals("NoPal"))
+				break;
+			this.pals.addItem(pal);
+		}
+	}
+	
+	private void log2server() throws Exception {
+		while(isBusy);
+		isBusy=true;
 		Client client = new Client();
 		client.sendMesg("Login");
 		client.sendMesg(loginField.getText());
@@ -155,26 +180,15 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Logowanie się powiodło",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
-			CheckMsg check = new CheckMsg();
-			new Timer(100, new ActionListener() {	//Nasłuchiwanie
-				 public void actionPerformed(ActionEvent e) {
-					 check.execute();
-					 validate();	//Włączenie nasłuchiwania
-				 }
-			 }).start();
+			downloadPals();
+			startListen();
 		}
 		else if(servResp.equals("Registered")){
 			JOptionPane.showMessageDialog(
                     this, "Zarejestrowano się",
                     "Logowanie",
                     JOptionPane.INFORMATION_MESSAGE);
-			CheckMsg check = new CheckMsg();
-			new Timer(100, new ActionListener() {	//Nasłuchiwanie
-				 public void actionPerformed(ActionEvent e) {
-					 check.execute();
-					 validate();	//Włączenie nasłuchiwania
-				 }
-			 }).start();
+			startListen();
 		}
 		else if(servResp.equals("WrongLog")){
 			JOptionPane.showMessageDialog(
@@ -188,15 +202,23 @@ public class Interface extends JFrame implements FocusListener {
                     "Logowanie",
                     JOptionPane.ERROR_MESSAGE);
 		}
+		isBusy=false;
 	}
 	
-	void addPal() throws Exception {
+	private void addPal() throws Exception {
+		while(isBusy);
+		isBusy=true;
 		Client client = new Client();
 		client.sendMesg("PalSelect");
-		String servResp=client.sendMesg(palsField.getText());
+		String pal=" ";
+		if (!pals.getSelectedItem().equals("Dodaj znajomego"))
+			pal=(String) pals.getSelectedItem();
+		else
+			pal=palsField.getText();
+		String servResp=client.sendMesg(pal);
 		if(servResp.equals("Connected")){
 			JOptionPane.showMessageDialog(
-                    this, "Połączono się z użytkownikiem "+palsField.getText(),
+                    this, "Połączono się z użytkownikiem "+pal,
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
 		}
@@ -218,11 +240,15 @@ public class Interface extends JFrame implements FocusListener {
                     "Łączenie z użytkownikiem",
                     JOptionPane.ERROR_MESSAGE);
 		}
+		isBusy=false;
 	}
-	void send() throws Exception {
+	private void send() throws Exception {
+		while(isBusy);
+		isBusy=true;
 		Client client = new Client();
 		client.sendMesg("Send");
 		String msg=client.sendMesg(writeField.getText());
 		chatField.setText(chatField.getText()+msg);
+		isBusy=false;
 	}
 }

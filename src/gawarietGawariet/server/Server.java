@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class Server {
 
     static ArrayList<User> users = new ArrayList<User>(); //Tablica zarejestrowanych użytkowników
-    enum status{idle, login, palSelect, logout, send, msg};
+    enum status{idle, login, palSelect, logout, send, palsList};
     
     static int mesgCounter = 0;    //Licznik otrzymanych wiadomości dla specjalnych zastosowań
     static status currentStatus = status.idle;
@@ -53,6 +53,8 @@ public class Server {
             currentStatus = status.login;
         } else if (message.equals("PalSelect")) {
             currentStatus = status.palSelect;
+        } else if (message.equals("PalsList")) {
+        	response=palsList(message, response, address, port);
         } else if (message.equals("Logout")) {
             currentStatus = status.logout;
         } else if (message.equals("Send")) {
@@ -62,9 +64,7 @@ public class Server {
                     Integer.toString(port).getBytes("utf8"), Integer.toString(port).getBytes("utf8").length, address, port);
         }
         else if (message.equals("CheckMsg")) {
-            currentStatus = status.msg;
             response=checkMsg(message, response, address, port);
-            currentStatus = status.idle;
         } 
     	return response;
     }
@@ -114,6 +114,7 @@ public class Server {
             for (int i = 0; i < users.size(); i++) {    //Szukaj użytkownika
                 if (users.get(i).login.equals(tmpLogin) & users.get(i).password.equals(tmpPassword)) {    //Istnieje
                     users.get(i).online = true;
+                    users.get(i).busy = false;
                     users.get(i).lastAddress = address;
                     users.get(i).lastPort = port;
                     userExists = true;
@@ -132,6 +133,7 @@ public class Server {
                 users.get(users.size() - 1).online = true;
                 users.get(users.size() - 1).lastAddress = address;
                 users.get(users.size() - 1).lastPort = port;
+                users.get(users.size() - 1).pals.add("NoPal");
                 response = new DatagramPacket(
                         "Registered".getBytes("utf8"), "Registered".getBytes("utf8").length, address, port);
             }
@@ -145,6 +147,7 @@ public class Server {
             if (users.get(i).lastAddress.equals(address)) {
                 users.get(i).online = false;
                 users.get(i).busy = false;
+                //users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
                 users.get(i).currentPal = null;
             }
         }
@@ -154,12 +157,16 @@ public class Server {
     static DatagramPacket palSelect(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
     	for (int i = 0; i < users.size(); i++) {    //Szukaj adresata
             if (users.get(i).login.equals(message)) {
-                for (int j = 0; j < users.size(); i++) {    //Szukaj wysyłającego
+                for (int j = 0; j < users.size(); j++) {    //Szukaj wysyłającego
                     if (users.get(j).lastAddress.equals(address)) {
                         if (users.get(i).busy) {    //Jeżeli użytkownik zajęty
                             response = new DatagramPacket(
                                     "BusyPal".getBytes("utf8"), "BusyPal".getBytes("utf8").length, address, port);
                         } else {
+                        		if (!users.get(j).pals.contains(users.get(i).login)){	//Jeżeli nie są znajomymi
+                        			users.get(j).pals.add(0,users.get(i).login);
+                        			users.get(i).pals.add(0,users.get(j).login);
+                        		}
                             users.get(j).currentPal = users.get(i);
                             users.get(i).currentPal = users.get(j);
                             users.get(j).busy = true;
@@ -177,13 +184,27 @@ public class Server {
     	}
         return response;
     }
+    static DatagramPacket palsList(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
+    	for (int j = 0; j < users.size(); j++) {    //Szukaj wysyłającego
+            if (users.get(j).lastAddress.equals(address)) {
+            	message=users.get(j).pals.get(mesgCounter);
+            	if(!users.get(j).pals.get(mesgCounter).equals("NoPal"))
+            		mesgCounter++;
+            	else
+            		mesgCounter=0;
+            	response = new DatagramPacket(
+                        message.getBytes("utf8"),
+                        message.getBytes("utf8").length, address, port);
+            }
+    	}
+    	return response;
+    }
     
     static DatagramPacket send(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
     	for (int i = 0; i < users.size(); i++) {
             if (users.get(i).lastAddress.equals(address)) {
                 message = users.get(i).login + ": " + message + "\n";
                 users.get(i).currentPal.unreadMesg.add(message);
-                users.get(i).currentPal.unreadMesg.get(0);//Nie wiadomo czemu, ale potrzebne do działania
                 response = new DatagramPacket(
                         message.getBytes("utf8"),
                         message.getBytes("utf8").length, address, port);
