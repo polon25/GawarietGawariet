@@ -234,6 +234,7 @@ public class Interface extends JFrame implements FocusListener {
                     "Logowanie",
                     JOptionPane.ERROR_MESSAGE);
 		}
+		passwordField.setText("");
 		isBusy=false;
 	}
 	
@@ -254,24 +255,28 @@ public class Interface extends JFrame implements FocusListener {
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
 			palsField.setText(pal);
+			startListen();
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
                     this, "Użytkownik jest zajęty. Poczekaj jakiś czas",
                     "Łączenie z użytkownikiem",
                     JOptionPane.WARNING_MESSAGE);
+			startListen();
 		}
 		else if(servResp.equals("ReqPal")){
 			JOptionPane.showMessageDialog(
                     this, "Wysłano zaproszenie do znajomych",
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
+			startListen();
 		}
 		else if(servResp.equals("NoPal")){
 			JOptionPane.showMessageDialog(
                     this, "Nie istnieje taki użytkownik",
                     "Łączenie z użytkownikiem",
                     JOptionPane.ERROR_MESSAGE);
+			startListen();
 		}
 		else {
 			JOptionPane.showMessageDialog(

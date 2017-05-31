@@ -155,8 +155,7 @@ public class Server {
                 users.get(i).busy = false;
                 if(users.get(i).currentPal!=null){
                 	users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
-                	users.get(i).unreadMesg.add("Zakończono połączenie");
-                	users.get(i).unreadMesg.add("Zakończono połączenie");
+                	users.get(i).currentPal.unreadMesg.add("Zakończono połączenie\n");	
                 }
                 users.get(i).currentPal = null;
             }
