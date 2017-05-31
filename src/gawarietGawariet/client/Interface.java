@@ -14,6 +14,7 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -68,6 +69,8 @@ public class Interface extends JFrame implements FocusListener {
 		writePanel.add(writeField);
 		
 		chatField.setEditable(false);
+		JScrollPane scrollPane = new JScrollPane(chatField);
+		chatPanel.add(scrollPane);
 		
 		loginButton.addActionListener(new ActionListener() {
 		    public void actionPerformed(ActionEvent e) {
@@ -138,7 +141,36 @@ public class Interface extends JFrame implements FocusListener {
 				isBusy=true;
 				Client client = new Client();
 				String response=client.sendMesg("CheckMsg");
-				if (!response.equals("NoMsg")){
+				if(response.equals("ReqPal")){
+					response=client.sendMesg("CheckMsg");
+					int n=JOptionPane.showConfirmDialog(
+	                        new Interface(), "Użytkownik "+response+" zaprosił cię do znajomych. Czy przyjmujesz zaproszenie?",
+	                        "Zaproszenie",
+	                        JOptionPane.YES_NO_OPTION);
+					if (n == JOptionPane.YES_OPTION) {
+						pals.addItem(response);
+						response=client.sendMesg("ReqPalYes");
+					}
+					else if (n == JOptionPane.NO_OPTION) {
+						response=client.sendMesg("ReqPalNo");
+					}
+				}
+				else if(response.equals("ReqPalYes")){
+					response=client.sendMesg("CheckMsg");
+					JOptionPane.showMessageDialog(
+							new Interface(), "Użytkownik "+response+" zaakceptował zaproszenie",
+		                    "Znajomość",
+		                    JOptionPane.INFORMATION_MESSAGE);
+					pals.addItem(response);
+				}
+				else if(response.equals("ReqPalNo")){
+					response=client.sendMesg("CheckMsg");
+					JOptionPane.showMessageDialog(
+							new Interface(), "Użytkownik "+response+" odrzucił zaproszenie",
+		                    "Znajomość",
+		                    JOptionPane.INFORMATION_MESSAGE);
+				}
+				else if (!response.equals("NoMsg")){
 					System.out.println("Otrzymano wiadomość: "+response);
 					chatField.setText(chatField.getText()+response);
 				}
@@ -221,12 +253,19 @@ public class Interface extends JFrame implements FocusListener {
                     this, "Połączono się z użytkownikiem "+pal,
                     "Łączenie z użytkownikiem",
                     JOptionPane.INFORMATION_MESSAGE);
+			palsField.setText(pal);
 		}
 		else if(servResp.equals("BusyPal")){
 			JOptionPane.showMessageDialog(
-                    this, "Użytkownik jest zajęty. Poczekaj jakiś czas.",
+                    this, "Użytkownik jest zajęty. Poczekaj jakiś czas",
                     "Łączenie z użytkownikiem",
                     JOptionPane.WARNING_MESSAGE);
+		}
+		else if(servResp.equals("ReqPal")){
+			JOptionPane.showMessageDialog(
+                    this, "Wysłano zaproszenie do znajomych",
+                    "Łączenie z użytkownikiem",
+                    JOptionPane.INFORMATION_MESSAGE);
 		}
 		else if(servResp.equals("NoPal")){
 			JOptionPane.showMessageDialog(
@@ -242,6 +281,7 @@ public class Interface extends JFrame implements FocusListener {
 		}
 		isBusy=false;
 	}
+	
 	private void send() throws Exception {
 		while(isBusy);
 		isBusy=true;

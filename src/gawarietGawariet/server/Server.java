@@ -66,6 +66,12 @@ public class Server {
         else if (message.equals("CheckMsg")) {
             response=checkMsg(message, response, address, port);
         } 
+        else if (message.equals("ReqPalYes")) {
+            response=ReqPal(message, response, address, port, true);
+        } 
+        else if (message.equals("ReqPalNo")) {
+            response=ReqPal(message, response, address, port, false);
+        } 
     	return response;
     }
     
@@ -147,7 +153,11 @@ public class Server {
             if (users.get(i).lastAddress.equals(address)) {
                 users.get(i).online = false;
                 users.get(i).busy = false;
-                //users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
+                if(users.get(i).currentPal!=null){
+                	users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
+                	users.get(i).unreadMesg.add("Zakończono połączenie");
+                	users.get(i).unreadMesg.add("Zakończono połączenie");
+                }
                 users.get(i).currentPal = null;
             }
         }
@@ -163,16 +173,19 @@ public class Server {
                             response = new DatagramPacket(
                                     "BusyPal".getBytes("utf8"), "BusyPal".getBytes("utf8").length, address, port);
                         } else {
-                        		if (!users.get(j).pals.contains(users.get(i).login)){	//Jeżeli nie są znajomymi
-                        			users.get(j).pals.add(0,users.get(i).login);
-                        			users.get(i).pals.add(0,users.get(j).login);
-                        		}
-                            users.get(j).currentPal = users.get(i);
-                            users.get(i).currentPal = users.get(j);
-                            users.get(j).busy = true;
-                            users.get(i).busy = true;
-                            response = new DatagramPacket(
-                                    "Connected".getBytes("utf8"), "Connected".getBytes("utf8").length, address, port);
+                        	if (!users.get(j).pals.contains(users.get(i).login)){	//Jeżeli nie są znajomymi
+                        		response=palRequest(message, response, address, port, users.get(j), users.get(i));
+                        	}
+                        	else{	//Jeżeli są znajomymi
+                        		users.get(j).currentPal = users.get(i);
+                        		users.get(i).currentPal = users.get(j);
+                        		users.get(j).busy = true;
+                        		users.get(i).busy = true;
+                        		users.get(j).unreadMesg.add("Połączono z: "+users.get(i).login+"\n");
+                        		users.get(i).unreadMesg.add("Połączono z: "+users.get(j).login+"\n");
+                        		response = new DatagramPacket(
+                        				"Connected".getBytes("utf8"), "Connected".getBytes("utf8").length, address, port);
+                        	}
                         }
                         break;
                     }
@@ -184,6 +197,42 @@ public class Server {
     	}
         return response;
     }
+    
+    static DatagramPacket ReqPal(String message, DatagramPacket response, InetAddress address, int port, boolean yes) 
+    		throws Exception{
+    	if (yes){	//Odpowiedź na prośbę o znajomych
+    		for (int i = 0; i < users.size(); i++) {	//Dodanie znajomych
+                if (users.get(i).lastAddress.equals(address)) {
+                	users.get(i).pals.add(0,users.get(i).currentPal.login);
+                	users.get(i).currentPal.pals.add(0,users.get(i).login);
+                	users.get(i).currentPal.unreadMesg.add("ReqPalYes");
+                	users.get(i).currentPal.unreadMesg.add(users.get(i).login);
+                	users.get(i).currentPal=null; 
+                }
+    		}
+    	}
+    	else{
+    		for (int i = 0; i < users.size(); i++) {	//Dodanie znajomych
+                if (users.get(i).lastAddress.equals(address)) {
+                	users.get(i).currentPal.unreadMesg.add("ReqPalNo");
+                	users.get(i).currentPal.unreadMesg.add(users.get(i).login);
+                	users.get(i).currentPal=null; 
+                }
+    		}
+    	}
+    	return response;
+    }
+    
+    static DatagramPacket palRequest(String message, DatagramPacket response, InetAddress address, int port,
+    		User fromU, User toU)throws Exception{	//fromU, toU - nadawca i odbiorca
+    	response = new DatagramPacket(
+			"ReqPal".getBytes("utf8"), "ReqPal".getBytes("utf8").length, address, port);
+    	toU.unreadMesg.add("ReqPal");
+    	toU.unreadMesg.add(fromU.login);
+    	toU.currentPal = fromU; //Wstępne ustawienie jednostronnej znajomości
+    	return response;
+    }
+    
     static DatagramPacket palsList(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
     	for (int j = 0; j < users.size(); j++) {    //Szukaj wysyłającego
             if (users.get(j).lastAddress.equals(address)) {
