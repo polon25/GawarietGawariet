@@ -3,6 +3,12 @@ package gawarietGawariet.server;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+/**
+ * 
+ * @author Polonius
+ *
+ */
+
 public class Config {
 	public static final int PORT = 20000;
 	public static final int BUFFER_SIZE = 1024;

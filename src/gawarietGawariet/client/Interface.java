@@ -20,8 +20,13 @@ import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 
-import java.util.ArrayList;
 import java.util.concurrent.ScheduledExecutorService;
+
+/**
+ * 
+ * @author Polonius
+ *
+ */
 
 public class Interface extends JFrame implements FocusListener {
 	private static final long serialVersionUID = 1L;

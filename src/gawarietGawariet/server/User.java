@@ -3,6 +3,12 @@ package gawarietGawariet.server;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Polonius
+ *
+ */
+
 public class User {
     String login;
     String password;

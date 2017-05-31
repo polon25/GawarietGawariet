@@ -8,6 +8,12 @@ import javax.swing.JFrame;
 
 import gawarietGawariet.server.Config;
 
+/**
+ * 
+ * @author Polonius
+ *
+ */
+
 public class Client {
 	public Client() {}
 	

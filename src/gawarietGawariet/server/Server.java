@@ -5,6 +5,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
+/**
+ * 
+ * @author Polonius
+ *
+ */
 
 public class Server {
 
@@ -155,7 +160,7 @@ public class Server {
                 users.get(i).busy = false;
                 if(users.get(i).currentPal!=null){
                 	users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
-                	users.get(i).currentPal.unreadMesg.add("Zakończono połączenie\n");	
+                	users.get(i).currentPal.unreadMesg.add("Zakończono połączenie");	
                 }
                 users.get(i).currentPal = null;
             }
