@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
@@ -38,7 +37,7 @@ public class Server {
         
         //Baza danych użytkowników
         try{ 
-			new DataBase(); //Create new h2
+			new DataBase("users"); //Create new h2
 			downloadData();
 		} catch (SQLException e){}//If there's already h2	
         
@@ -67,23 +66,34 @@ public class Server {
         }
     }
     
-    private static void downloadData() throws SQLException, UnknownHostException{
+    private static void downloadData() throws SQLException, UnknownHostException{	//Pobieranie danych z bazy
     	Connection conn = null;
 		try{
 			conn = DriverManager.getConnection("jdbc:h2:users", "sa", "");
-			
 			Statement statement = conn.createStatement();
 			statement.execute("SELECT Login, Password, Address, Port FROM users");
-			
 			ResultSet rs = statement.getResultSet();
-			ResultSetMetaData md = rs.getMetaData();
-			
 			while (rs.next()) {	//Pobierz dane użytkowników
 				users.add(new User(MessageFormat.format("{0}", rs.getObject(1)),MessageFormat.format("{0}", rs.getObject(2))));
 				users.get(users.size() - 1).online = true;
 		        users.get(users.size() - 1).lastAddress = InetAddress.getByName(MessageFormat.format("{0}", rs.getObject(3)));
 		        users.get(users.size() - 1).lastPort = (int) rs.getObject(4);
 		        users.get(users.size() - 1).pals.add("NoPal");	
+		        users.get(users.size() - 1).online = false;
+		        users.get(users.size() - 1).busy = false;	
+		        Connection conn1 = null;
+				try{	//Pobieranie listy znajomych i wiadomości
+					conn1 = DriverManager.getConnection("jdbc:h2:users", "sa", "");
+					String statementString="SELECT PAL FROM "+users.get(users.size() - 1).login;
+					Statement statement1 = conn1.createStatement();
+					statement1.execute(statementString);
+					ResultSet rs1 = statement1.getResultSet();
+					while (rs1.next())	//Pobierz listę znajomych
+						users.get(users.size() - 1).pals.add(0,MessageFormat.format("{0}", rs1.getObject(1)));
+				} finally {
+					if (conn1!=null)
+						conn1.close();
+				}
 			}
 		} finally {
 			if (conn!=null)
@@ -98,7 +108,7 @@ public class Server {
         } else if (message.equals("PalSelect")) {
             currentStatus = status.palSelect;
         } else if (message.equals("PalsList")) {
-        	response=palsList(message, response, address, port);
+        	response=palsList(response, address, port);
         } else if (message.equals("Logout")) {
             currentStatus = status.logout;
         } else if (message.equals("Send")) {
@@ -108,26 +118,25 @@ public class Server {
                     Integer.toString(port).getBytes("utf8"), Integer.toString(port).getBytes("utf8").length, address, port);
         }
         else if (message.equals("CheckMsg")) {
-            response=checkMsg(message, response, address, port);
+            response=checkMsg(response, address, port);
         } 
         else if (message.equals("ReqPalYes")) {
-            response=ReqPal(message, response, address, port, true);
+            response=ReqPal(response, address, true);
         } 
         else if (message.equals("ReqPalNo")) {
-            response=ReqPal(message, response, address, port, false);
+            response=ReqPal(response, address, false);
         } 
     	return response;
     }
     
-    static DatagramPacket checkMsg(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
+    static DatagramPacket checkMsg(DatagramPacket response, InetAddress address, int port) throws Exception{
     	for (int i = 0; i < users.size(); i++) {
             if (users.get(i).lastAddress.equals(address)) {
+            	String message = "NoMsg";
             	if (users.get(i).unreadMesg.size()>0){
             		message = users.get(i).unreadMesg.get(0);
             		users.get(i).unreadMesg.remove(0);
             	}
-            	else
-            		message = "NoMsg";
                 response = new DatagramPacket(
                         message.getBytes("utf8"),
                         message.getBytes("utf8").length, address, port);
@@ -141,7 +150,7 @@ public class Server {
     	if (currentStatus == status.login) {    //Logowanie użytkownika
     		response=login(message, response, address, port);
         } else if (currentStatus == status.logout) {    //Wyloguj użytkownika, z którego adresu przyszła informacja
-        	response=logout(message, response, address, port);
+        	response=logout(response, address);
             currentStatus = status.idle;
         } else if (currentStatus == status.palSelect) {    //Wybór adresata
         	response=palSelect(message, response, address, port);
@@ -203,13 +212,14 @@ public class Server {
 			preparedStatement.setObject(3, address.getHostAddress());
 			preparedStatement.setObject(4, port);
 			preparedStatement.execute();
+			new DataBase(login);
 		} finally {
 			if (conn!=null)
 				conn.close();
 		}
     }
     
-    static DatagramPacket logout(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
+    static DatagramPacket logout(DatagramPacket response, InetAddress address) throws Exception{
     	for (int i = 0; i < users.size(); i++) {
             if (users.get(i).lastAddress.equals(address)) {
                 users.get(i).online = false;
@@ -234,7 +244,7 @@ public class Server {
                                     "BusyPal".getBytes("utf8"), "BusyPal".getBytes("utf8").length, address, port);
                         } else {
                         	if (!users.get(j).pals.contains(users.get(i).login)){	//Jeżeli nie są znajomymi
-                        		response=palRequest(message, response, address, port, users.get(j), users.get(i));
+                        		response=palRequest(response, address, port, users.get(j), users.get(i));
                         	}
                         	else{	//Jeżeli są znajomymi
                         		users.get(j).currentPal = users.get(i);
@@ -258,21 +268,17 @@ public class Server {
         return response;
     }
     
-    static DatagramPacket ReqPal(String message, DatagramPacket response, InetAddress address, int port, boolean yes) 
+    static DatagramPacket ReqPal(DatagramPacket response, InetAddress address, boolean yes) 
     		throws Exception{
     	if (yes){	//Odpowiedź na prośbę o znajomych
     		for (int i = 0; i < users.size(); i++) {	//Dodanie znajomych
                 if (users.get(i).lastAddress.equals(address)) {
-                	users.get(i).pals.add(0,users.get(i).currentPal.login);
-                	users.get(i).currentPal.pals.add(0,users.get(i).login);
-                	users.get(i).currentPal.unreadMesg.add("ReqPalYes");
-                	users.get(i).currentPal.unreadMesg.add(users.get(i).login);
-                	users.get(i).currentPal=null; 
+                	ReqPalYes(users.get(i));
                 }
     		}
     	}
     	else{
-    		for (int i = 0; i < users.size(); i++) {	//Dodanie znajomych
+    		for (int i = 0; i < users.size(); i++) {	//Odrzucenie znajomości
                 if (users.get(i).lastAddress.equals(address)) {
                 	users.get(i).currentPal.unreadMesg.add("ReqPalNo");
                 	users.get(i).currentPal.unreadMesg.add(users.get(i).login);
@@ -283,8 +289,31 @@ public class Server {
     	return response;
     }
     
-    static DatagramPacket palRequest(String message, DatagramPacket response, InetAddress address, int port,
-    		User fromU, User toU)throws Exception{	//fromU, toU - nadawca i odbiorca
+    static void ReqPalYes(User user) throws SQLException{
+    	user.pals.add(0,user.currentPal.login);
+    	user.currentPal.pals.add(0,user.login);
+    	Connection conn = null;
+		try{
+			conn = DriverManager.getConnection("jdbc:h2:users", "sa", "");
+			String statementString="INSERT INTO "+user.login+" VALUES (?);";
+			PreparedStatement preparedStatement = conn.prepareStatement(statementString);
+			preparedStatement.setObject(1, user.currentPal.login);
+			preparedStatement.execute();
+			statementString="INSERT INTO "+user.currentPal.login+" VALUES (?);";
+			preparedStatement = conn.prepareStatement(statementString);
+			preparedStatement.setObject(1, user.login);
+			preparedStatement.execute();
+		} finally {
+			if (conn!=null)
+				conn.close();
+		}
+    	user.currentPal.unreadMesg.add("ReqPalYes");
+    	user.currentPal.unreadMesg.add(user.login);
+    	user.currentPal=null; 
+    }
+    
+    static DatagramPacket palRequest(DatagramPacket response, InetAddress address, int port, User fromU,
+    		User toU)throws Exception{	//fromU, toU - nadawca i odbiorca
     	response = new DatagramPacket(
 			"ReqPal".getBytes("utf8"), "ReqPal".getBytes("utf8").length, address, port);
     	toU.unreadMesg.add("ReqPal");
@@ -293,10 +322,10 @@ public class Server {
     	return response;
     }
     
-    static DatagramPacket palsList(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
+    static DatagramPacket palsList(DatagramPacket response, InetAddress address, int port) throws Exception{
     	for (int j = 0; j < users.size(); j++) {    //Szukaj wysyłającego
             if (users.get(j).lastAddress.equals(address)) {
-            	message=users.get(j).pals.get(mesgCounter);
+            	String message=users.get(j).pals.get(mesgCounter);
             	if(!users.get(j).pals.get(mesgCounter).equals("NoPal"))
             		mesgCounter++;
             	else
