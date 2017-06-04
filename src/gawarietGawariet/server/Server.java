@@ -3,6 +3,15 @@ package gawarietGawariet.server;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 /**
@@ -27,6 +36,12 @@ public class Server {
         byte[] byteResponse = "OK".getBytes("utf8");
         System.out.println("Server is running");
         
+        //Baza danych użytkowników
+        try{ 
+			new DataBase(); //Create new h2
+			downloadData();
+		} catch (SQLException e){}//If there's already h2	
+        
         while (true) {
             DatagramPacket reclievedPacket
                     = new DatagramPacket(new byte[Config.BUFFER_SIZE], Config.BUFFER_SIZE);
@@ -50,6 +65,30 @@ public class Server {
             //currentStatus = Status.getStatus(message);
             datagramSocket.send(response);
         }
+    }
+    
+    private static void downloadData() throws SQLException, UnknownHostException{
+    	Connection conn = null;
+		try{
+			conn = DriverManager.getConnection("jdbc:h2:users", "sa", "");
+			
+			Statement statement = conn.createStatement();
+			statement.execute("SELECT Login, Password, Address, Port FROM users");
+			
+			ResultSet rs = statement.getResultSet();
+			ResultSetMetaData md = rs.getMetaData();
+			
+			while (rs.next()) {	//Pobierz dane użytkowników
+				users.add(new User(MessageFormat.format("{0}", rs.getObject(1)),MessageFormat.format("{0}", rs.getObject(2))));
+				users.get(users.size() - 1).online = true;
+		        users.get(users.size() - 1).lastAddress = InetAddress.getByName(MessageFormat.format("{0}", rs.getObject(3)));
+		        users.get(users.size() - 1).lastPort = (int) rs.getObject(4);
+		        users.get(users.size() - 1).pals.add("NoPal");	
+			}
+		} finally {
+			if (conn!=null)
+				conn.close();
+		}
     }
     
     static DatagramPacket setStatus(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
@@ -140,17 +179,34 @@ public class Server {
                 }
             }
             if (!userExists) {    //Rejestracja i logowanie
-                users.add(new User(tmpLogin, tmpPassword));
-                users.get(users.size() - 1).online = true;
-                users.get(users.size() - 1).lastAddress = address;
-                users.get(users.size() - 1).lastPort = port;
-                users.get(users.size() - 1).pals.add("NoPal");
+                addUser(tmpLogin,tmpPassword,address,port);
                 response = new DatagramPacket(
                         "Registered".getBytes("utf8"), "Registered".getBytes("utf8").length, address, port);
             }
             currentStatus = status.idle;
         }
         return response;
+    }
+    
+    private static void addUser(String login, String password, InetAddress address, int port) throws SQLException{
+    	users.add(new User(login, password));
+        users.get(users.size() - 1).online = true;
+        users.get(users.size() - 1).lastAddress = address;
+        users.get(users.size() - 1).lastPort = port;
+        users.get(users.size() - 1).pals.add("NoPal");
+    	Connection conn = null;
+		try{
+			conn = DriverManager.getConnection("jdbc:h2:users", "sa", "");
+			PreparedStatement preparedStatement = conn.prepareStatement("INSERT INTO users VALUES (?, ?, ?, ?);");
+			preparedStatement.setObject(1, login);
+			preparedStatement.setObject(2, password);
+			preparedStatement.setObject(3, address.getHostAddress());
+			preparedStatement.setObject(4, port);
+			preparedStatement.execute();
+		} finally {
+			if (conn!=null)
+				conn.close();
+		}
     }
     
     static DatagramPacket logout(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
@@ -248,6 +304,7 @@ public class Server {
             	response = new DatagramPacket(
                         message.getBytes("utf8"),
                         message.getBytes("utf8").length, address, port);
+            	break;
             }
     	}
     	return response;
