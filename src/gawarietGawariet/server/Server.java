@@ -35,11 +35,9 @@ public class Server {
         byte[] byteResponse = "OK".getBytes("utf8");
         System.out.println("Server is running");
         
-        //Baza danych użytkowników
-        try{ 
-			new DataBase("users"); //Create new h2
-			downloadData();
-		} catch (SQLException e){}//If there's already h2	
+        //Baza danych użytkowników tworzymy baze danych
+       //zrob catch
+        createDataBase();
         
         while (true) {
             DatagramPacket reclievedPacket
@@ -65,34 +63,37 @@ public class Server {
             datagramSocket.send(response);
         }
     }
-    
+
+    private static void createDataBase() throws UnknownHostException {
+        try{
+            new DataBase("users"); //Create new h2
+            downloadData();
+        } catch (SQLException e){}//If there's already h2
+    }
+
     private static void downloadData() throws SQLException, UnknownHostException{	//Pobieranie danych z bazy
     	Connection conn = null;
 		try{
 			conn = DriverManager.getConnection("jdbc:h2:users", "sa", "");
 			Statement statement = conn.createStatement();
 			statement.execute("SELECT Login, Password, Address, Port FROM users");
-			ResultSet rs = statement.getResultSet();
-			while (rs.next()) {	//Pobierz dane użytkowników
-				users.add(new User(MessageFormat.format("{0}", rs.getObject(1)),MessageFormat.format("{0}", rs.getObject(2))));
-				users.get(users.size() - 1).online = true;
-		        users.get(users.size() - 1).lastAddress = InetAddress.getByName(MessageFormat.format("{0}", rs.getObject(3)));
-		        users.get(users.size() - 1).lastPort = (int) rs.getObject(4);
-		        users.get(users.size() - 1).pals.add("NoPal");	
-		        users.get(users.size() - 1).online = false;
-		        users.get(users.size() - 1).busy = false;	
-		        Connection conn1 = null;
+			ResultSet resultSet = statement.getResultSet();
+			while (resultSet.next()) {	//Pobierz dane użytkowników
+                User user=new User(MessageFormat.format("{0}", resultSet.getObject(1)),MessageFormat.format("{0}", resultSet.getObject(2)));
+				users.add(user);
+				configUser(user,resultSet);
+		        Connection connectionUser = null;
 				try{	//Pobieranie listy znajomych i wiadomości
-					conn1 = DriverManager.getConnection("jdbc:h2:users", "sa", "");
+					connectionUser = DriverManager.getConnection("jdbc:h2:users", "sa", "");
 					String statementString="SELECT PAL FROM "+users.get(users.size() - 1).login;
-					Statement statement1 = conn1.createStatement();
+					Statement statement1 = connectionUser.createStatement();
 					statement1.execute(statementString);
 					ResultSet rs1 = statement1.getResultSet();
 					while (rs1.next())	//Pobierz listę znajomych
-						users.get(users.size() - 1).pals.add(0,MessageFormat.format("{0}", rs1.getObject(1)));
+						user.pals.add(0,MessageFormat.format("{0}", rs1.getObject(1)));
 				} finally {
-					if (conn1!=null)
-						conn1.close();
+					if (connectionUser!=null)
+						connectionUser.close();
 				}
 			}
 		} finally {
@@ -100,7 +101,16 @@ public class Server {
 				conn.close();
 		}
     }
-    
+
+    private static void configUser(User user,ResultSet resultSet) throws SQLException,UnknownHostException  {
+        user.online = true;
+        user.lastAddress = InetAddress.getByName(MessageFormat.format("{0}", resultSet.getObject(3)));
+        user.lastPort = (int) resultSet.getObject(4);
+        user.pals.add("NoPal");
+        user.online = false;
+        user.busy = false;
+    }
+
     static DatagramPacket setStatus(String message, DatagramPacket response, InetAddress address, int port) throws Exception{
     	//Zwraca response, bo inaczej nie działa (na razie)
     	if (message.equals("Login")) {
@@ -226,7 +236,7 @@ public class Server {
                 users.get(i).busy = false;
                 if(users.get(i).currentPal!=null){
                 	users.get(i).currentPal.busy = false; //<- Zakomentować podczas testów na jednym urządzeniu
-                	users.get(i).currentPal.unreadMesg.add("Zakończono połączenie");	
+                	users.get(i).currentPal.unreadMesg.add("Zakończono połączenie");
                 }
                 users.get(i).currentPal = null;
             }
@@ -282,7 +292,7 @@ public class Server {
                 if (users.get(i).lastAddress.equals(address)) {
                 	users.get(i).currentPal.unreadMesg.add("ReqPalNo");
                 	users.get(i).currentPal.unreadMesg.add(users.get(i).login);
-                	users.get(i).currentPal=null; 
+                	users.get(i).currentPal=null;
                 }
     		}
     	}

@@ -148,15 +148,15 @@ public class Interface extends JFrame implements FocusListener {
 				String response=client.sendMesg("CheckMsg");
 				if(response.equals("ReqPal")){
 					response=client.sendMesg("CheckMsg");
-					int n=JOptionPane.showConfirmDialog(
+					int choice=JOptionPane.showConfirmDialog(
 	                        new Interface(), "Użytkownik "+response+" zaprosił cię do znajomych. Czy przyjmujesz zaproszenie?",
 	                        "Zaproszenie",
 	                        JOptionPane.YES_NO_OPTION);
-					if (n == JOptionPane.YES_OPTION) {
+					if (choice == JOptionPane.YES_OPTION) {
 						pals.addItem(response);
 						response=client.sendMesg("ReqPalYes");
 					}
-					else if (n == JOptionPane.NO_OPTION) {
+					else if (choice == JOptionPane.NO_OPTION) {
 						response=client.sendMesg("ReqPalNo");
 					}
 				}
